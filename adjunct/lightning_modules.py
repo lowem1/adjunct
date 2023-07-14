@@ -3,6 +3,11 @@ import torchmetrics
 import torch
 
 
+import lightning as pl
+import torchmetrics
+import torch
+
+
 class TorchWrapperForSequenceClassification(pl.LightningModule):
     def __init__(self, encoder, n_labels, dropout):
         super(TorchWrapperForSequenceClassification, self).__init__()
@@ -16,7 +21,7 @@ class TorchWrapperForSequenceClassification(pl.LightningModule):
         self.val_loss = torch.nn.CrossEntropyLoss()
         self.test_loss = torch.nn.CrossEntropyLoss()
         self.train_acc = torchmetrics.classification.Accuracy(task="multiclass", num_classes=n_labels)
-        self.valid_acc = torchmetrics.classification.Accuracy(task="multiclass", num_classes=n_labels)
+        self.val_acc = torchmetrics.classification.Accuracy(task="multiclass", num_classes=n_labels)
         self.test_acc = torchmetrics.classification.Accuracy(task="multiclass", num_classes=n_labels)
 
     def forward(self, inputs):
