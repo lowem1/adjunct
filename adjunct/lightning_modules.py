@@ -13,6 +13,10 @@ class TorchWrapperForSequenceClassification(pl.LightningModule):
             torch.nn.Linear(encoder.config.hidden_size, n_labels),
         )
         self.train_loss = torch.nn.CrossEntropyLoss()
+        self.val_loss = torch.nn.CrossEntropyLoss()
+        self.test_loss = torch.nn.CrossEntropyLoss()
+        self.train_acc = torchmetrics.classification.Accuracy(task="multiclass", num_classes=n_labels)
+        self.valid_acc = torchmetrics.classification.Accuracy(task="multiclass", num_classes=n_labels)
 
     def forward(self, inputs):
         enc_feats = self.encoder(**inputs)
