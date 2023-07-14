@@ -17,6 +17,7 @@ class TorchWrapperForSequenceClassification(pl.LightningModule):
         self.test_loss = torch.nn.CrossEntropyLoss()
         self.train_acc = torchmetrics.classification.Accuracy(task="multiclass", num_classes=n_labels)
         self.valid_acc = torchmetrics.classification.Accuracy(task="multiclass", num_classes=n_labels)
+        self.test_acc = torchmetrics.classification.Accuracy(task="multiclass", num_classes=n_labels)
 
     def forward(self, inputs):
         enc_feats = self.encoder(**inputs)
@@ -28,7 +29,8 @@ class TorchWrapperForSequenceClassification(pl.LightningModule):
         labels = data.pop("labels")
         logits = self.forward(data)
         loss = self.train_loss(logits, labels.long())
-        self.log("training loss", loss)
+        acc = self.train_acc(logits, labels.long())
+        self.log_dict({"acc": acc, "loss": loss})
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -36,14 +38,17 @@ class TorchWrapperForSequenceClassification(pl.LightningModule):
         labels = data.pop("labels")
         logits = self.forward(data)
         loss = self.val_loss(logits, labels.long())
-        self.log("val loss: ", loss)
+        acc = self.val_acc(logits, labels.long())
+        self.log_dict({"acc": acc, "loss": loss})
 
     def test_step(self, batch, batch_idx):
         data = batch
         labels = data.pop("labels")
         logits = self.forward(data)
-        loss = self.val_loss(logits, labels.long())
-        self.log("test loss: ", loss)
+        loss = self.test_loss(logits, labels.long())
+        acc = self.test_acc(logits, labels.long())
+        self.log_dict({"acc": acc, "loss": loss})
+
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=1e-3)
