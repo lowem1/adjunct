@@ -42,6 +42,8 @@ class ICD10DataModule(pl.LightningDataModule):
             max_length=128,
             return_tensors="pt",
         )
+    
+    
 
     @staticmethod
     def with_labels(row, labeler):
@@ -177,7 +179,7 @@ class ConstOCRDataModule(pl.LightningDataModule):
         return DataLoader(self.train, sampler=RandomSampler(self.train), batch_size=32)
 
     def val_dataloader(self):
-        return DataLoader(self.val, sampler=RandomSampler(self.test), batch_size=16)
+        return DataLoader(self.val, sampler=RandomSampler(self.val), batch_size=16)
 
     def test_dataloader(self):
         return DataLoader(self.test, sampler=RandomSampler(self.test), batch_size=16)

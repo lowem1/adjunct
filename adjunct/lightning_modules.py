@@ -12,10 +12,7 @@ class TorchWrapperForSequenceClassification(pl.LightningModule):
             torch.nn.Dropout(dropout),
             torch.nn.Linear(encoder.config.hidden_size, n_labels),
         )
-        self.loss = torch.nn.CrossEntropyLoss()
-        self.accuracy = torchmetrics.Accuracy(
-            num_classes=n_labels, task="multiclass", average="macro"
-        )
+        self.train_loss = torch.nn.CrossEntropyLoss()
 
     def forward(self, inputs):
         enc_feats = self.encoder(**inputs)
@@ -26,7 +23,7 @@ class TorchWrapperForSequenceClassification(pl.LightningModule):
         data = batch
         labels = data.pop("labels")
         logits = self.forward(data)
-        loss = self.loss(logits, labels.long())
+        loss = self.train_loss(logits, labels.long())
         self.log("training loss", loss)
         return loss
 
@@ -34,14 +31,14 @@ class TorchWrapperForSequenceClassification(pl.LightningModule):
         data = batch
         labels = data.pop("labels")
         logits = self.forward(data)
-        loss = self.loss(logits, labels.long())
+        loss = self.val_loss(logits, labels.long())
         self.log("val loss: ", loss)
 
     def test_step(self, batch, batch_idx):
         data = batch
         labels = data.pop("labels")
         logits = self.forward(data)
-        loss = self.loss(logits, labels.long())
+        loss = self.val_loss(logits, labels.long())
         self.log("test loss: ", loss)
 
     def configure_optimizers(self):
