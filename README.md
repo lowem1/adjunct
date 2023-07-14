@@ -1,4 +1,4 @@
-# Adjunct! Lending a Helping Hand to Reuse Lightning Datasets
+# Adjunct! Lending a Helping Hand to Runtime Feature Reuse
 
 ![](docs/helping_hand.png?raw=true "Title")
 
