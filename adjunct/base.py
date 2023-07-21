@@ -9,7 +9,7 @@ from datasets import (
 )
 from transformers import AutoTokenizer
 from torch.utils.data import DataLoader, RandomSampler
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Optional, Any
 from uuid import uuid1
 
 
@@ -17,15 +17,15 @@ class BaseDataModuleForLMFeaturization(pl.LightningDataModule):
     def __init__(
         self,
         tokenizer_checkpoint: str,
-        tokenizer_args_map: dict,
-        select_columns: list,
-        select_rename_map: dict,
-        test_limit: int,
-        train_test_split_size: float,
-        train_batch_size: int,
-        val_batch_size: int,
-        test_batch_size: int,
-        data_checkpoint: str = "./",
+        tokenizer_args_map: Optional[Dict["str", Any]],
+        select_columns: Optional[List["str"]],
+        select_rename_map: Optional[Dict["str", "str"]],
+        test_limit: Optional["int"],
+        train_test_split_size: Optional["float"] = 0.2,
+        train_batch_size: Optional["int"] = 16,
+        val_batch_size: Optional["int"] = 16,
+        test_batch_size: Optional["int"] = 16,
+        data_checkpoint: Optional["str"] = "./",
     ):
         super().__init__()
 
