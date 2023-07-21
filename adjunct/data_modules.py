@@ -7,11 +7,16 @@ from datasets import (
     ClassLabel,
     set_caching_enabled,
     load_from_disk,
+    DatasetDict,
+    concatenate_datasets
 )
 
 from torch.utils.data import DataLoader, RandomSampler
 from typing import Dict, Tuple
 from uuid import uuid1
+import abc
+import nlpaug.augmenter.char as nac
+import shutil
 
 set_caching_enabled(False)
 
@@ -36,20 +41,6 @@ class ICD10DataModule(pl.LightningDataModule):
         self.test = None
 
     @staticmethod
-    def encode_data_elements(row, src_col, tokenizer):
-        return tokenizer.batch_encode_plus(
-            row[src_col],
-            truncation=True,
-            padding="max_length",
-            max_length=128,
-            return_tensors="pt",
-        )
-
-    @staticmethod
-    def with_labels(row, labeler):
-        return dict(labels=labeler.str2int(row["labels"]))
-
-    @staticmethod
     def init_module(
         tokenizer_checkpoint, data_checkpoint
     ) -> Tuple[Dataset, AutoTokenizer]:
@@ -60,27 +51,38 @@ class ICD10DataModule(pl.LightningDataModule):
             .select_columns(["labels", "line_data"])
         )
         return tokenizer, dataset
-
+    
     @staticmethod
-    def transform(dataset, encode_fn, tokenizer, labels_fn, labeler):
-        return (
-            dataset.map(
-                encode_fn,
-                fn_kwargs=dict(src_col="line_data", tokenizer=tokenizer),
-                batched=True,
-            )
-            .with_format(type="torch")
-            .select_columns(["input_ids", "attention_mask", "labels"])
-            .map(labels_fn, fn_kwargs=dict(labeler=labeler))
+    def transform(dataset, tokenizer) -> DatasetDict:
+        tokenizer_fn = lambda _, col: tokenizer.batch_encode_plus(
+            _[col],
+            truncation=True,
+            padding="max_length",
+            max_length=128,
+            return_tensors="pt"
         )
+
+        labeler = ClassLabel(
+            names=list(dataset.to_pandas()["labels"].unique())
+         )
+        
+        labeling_fn = lambda _, labeler: dict(
+            labels=labeler.str2int(_["labels"])
+        )
+        
+        transformed_dataset = (
+            dataset.map(
+                tokenizer_fn, fn_kwargs=(dict(col="line_data")), batched=True,
+            ).select_columns(["input_ids", "attention_mask", "labels"])
+            .map(labeling_fn, fn_kwargs=dict(labeler=labeler))
+            .with_format(type="torch")
+        )
+        return transformed_dataset
 
     def prepare_data(self):
         self.transform(
-            dataset=self.dataset,
-            encode_fn=self.encode_data_elements,
-            tokenizer=self.tokenizer,
-            labels_fn=self.with_labels,
-            labeler=self.labeler,
+            self.dataset,
+            self.tokenizer
         ).save_to_disk(self.data_dir)
 
     def setup(self, stage: str):
@@ -99,6 +101,6 @@ class ICD10DataModule(pl.LightningDataModule):
 
     def test_dataloader(self):
         return DataLoader(self.test, sampler=RandomSampler(self.test), batch_size=32)
-
-    def teardown(self):
-        os.remove(self.data_dir)
+    
+    def teardown(self, stage):
+        shutil.rmtree(self.data_dir)
